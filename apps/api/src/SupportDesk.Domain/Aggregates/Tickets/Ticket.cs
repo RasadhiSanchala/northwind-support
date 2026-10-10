@@ -1,64 +1,33 @@
-
 using SupportDesk.Domain.Common;
 using SupportDesk.Domain.Exceptions;
 
 namespace SupportDesk.Domain.Aggregates.Tickets;
 
-/// <summary>
-/// A support request raised by a customer.
-/// Every change to a ticket goes through its domain methods.
-/// </summary>
+/// <summary>A support request raised by a customer. Changes go through domain methods.</summary>
 public sealed class Ticket : AggregateRoot
 {
-    private Ticket()
-    {
-        // Required by EF Core.
-    }
+    private readonly List<TicketEscalation> _escalations = [];
 
-    /// <summary>
-    /// Human-friendly identifier, e.g. TCK-0042.
-    /// </summary>
+    private Ticket() { /* Required by EF Core. */ }
+
     public string Reference { get; private set; } = string.Empty;
-
     public string Title { get; private set; } = string.Empty;
-
     public string Description { get; private set; } = string.Empty;
-
     public int CustomerId { get; private set; }
-
     public int CategoryId { get; private set; }
-
-    /// <summary>
-    /// Null while the ticket has no assigned agent.
-    /// </summary>
     public int? AssignedAgentId { get; private set; }
-
     public TicketPriority Priority { get; private set; }
-
     public TicketStatus Status { get; private set; }
-
     public DateTime CreatedAtUtc { get; private set; }
-
     public DateTime UpdatedAtUtc { get; private set; }
-
-    /// <summary>
-    /// SLA response deadline. Null when no SLA has been assigned.
-    /// </summary>
     public DateTime? DueAtUtc { get; private set; }
-
     public DateTime? ResolvedAtUtc { get; private set; }
 
-    /// <summary>
-    /// True while the ticket still requires agent attention.
-    /// </summary>
-    public bool IsOpen =>
-        Status is not (TicketStatus.Resolved or TicketStatus.Closed);
+    /// <summary>Escalation records cannot be edited or removed through the aggregate.</summary>
+    public IReadOnlyCollection<TicketEscalation> Escalations => _escalations.AsReadOnly();
 
-    /// <summary>
-    /// Creates a ticket with its calculated SLA deadline.
-    /// The optional deadline preserves compatibility with
-    /// existing domain tests and callers.
-    /// </summary>
+    public bool IsOpen => Status is not (TicketStatus.Resolved or TicketStatus.Closed);
+
     public static Ticket Raise(
         string reference,
         string title,
@@ -94,14 +63,9 @@ public sealed class Ticket : AggregateRoot
         };
     }
 
-    /// <summary>
-    /// Changes ticket status while maintaining
-    /// its resolution timestamp.
-    /// </summary>
     public void ChangeStatus(TicketStatus status, DateTime nowUtc)
     {
-        if (Status == TicketStatus.Closed &&
-            status != TicketStatus.Closed)
+        if (Status == TicketStatus.Closed && status != TicketStatus.Closed)
         {
             throw new BusinessRuleViolationException(
                 $"Ticket {Reference} is closed and cannot be moved to {status}.");
@@ -118,13 +82,67 @@ public sealed class Ticket : AggregateRoot
         UpdatedAtUtc = nowUtc;
     }
 
-    /// <summary>
-    /// Assigns or unassigns an agent.
-    /// The caller validates agent eligibility.
-    /// </summary>
     public void AssignTo(int? agentId, DateTime nowUtc)
     {
         AssignedAgentId = agentId;
         UpdatedAtUtc = nowUtc;
+    }
+
+    /// <summary>
+    /// Moves exactly one priority level, resets the SLA clock, and records the immutable
+    /// before/after state atomically with the ticket update.
+    /// </summary>
+    public TicketEscalation Escalate(
+        string reason,
+        string escalatedBy,
+        DateTime nowUtc,
+        DateTime newDueAtUtc,
+        int? newAgentId)
+    {
+        if (Status is TicketStatus.Resolved or TicketStatus.Closed)
+        {
+            throw new BusinessRuleViolationException(
+                $"Ticket {Reference} has status {Status} and cannot be escalated.");
+        }
+
+        if (Priority == TicketPriority.Critical)
+        {
+            throw new BusinessRuleViolationException(
+                $"Ticket {Reference} is already Critical and cannot be escalated.");
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        ArgumentException.ThrowIfNullOrWhiteSpace(escalatedBy);
+        reason = reason.Trim();
+        escalatedBy = escalatedBy.Trim();
+
+        if (reason.Length is < 5 or > 500)
+            throw new ArgumentException("Reason must contain 5 to 500 characters.", nameof(reason));
+
+        if (escalatedBy.Length > 100)
+            throw new ArgumentException("EscalatedBy cannot exceed 100 characters.", nameof(escalatedBy));
+
+        if (newDueAtUtc <= nowUtc)
+            throw new BusinessRuleViolationException("The new SLA deadline must be in the future.");
+
+        var nextPriority = (TicketPriority)((int)Priority + 1);
+        var history = new TicketEscalation(
+            Priority,
+            nextPriority,
+            AssignedAgentId,
+            newAgentId,
+            DueAtUtc,
+            newDueAtUtc,
+            reason,
+            escalatedBy,
+            nowUtc);
+
+        Priority = nextPriority;
+        AssignedAgentId = newAgentId;
+        DueAtUtc = newDueAtUtc;
+        UpdatedAtUtc = nowUtc;
+        _escalations.Add(history);
+
+        return history;
     }
 }
