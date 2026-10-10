@@ -64,4 +64,17 @@ ChatGPT assisted with understanding the repository, generating code/test drafts,
 - Reviewed EF migration files for `TicketEscalations` and `AgentCredentials`, without resetting the existing database.
 - Documentation committed, and the **default `main` branch updated by a normal, non-squash merge** or a clearly provided feature-branch submission URL.
 
-**Time accounting:** Fill in actual estimates before submission: Task 1 — ___ h; Task 2 — ___ h; Task 3 — ___ h; testing/debugging/docs — ___ h. Do not report the assignment's suggested effort estimates as personal measured time.
+## Time spent on the assignment
+
+| Activity | Approximate time |
+|---|---|
+| Task 1 – Defect investigation, regression testing, and SQL filtering | 3 hours |
+| Task 2 – Automatic triage, SLA, agent assignment, escalation, and frontend integration | 8 hours |
+| Task 3 – JWT authentication, secure credentials, login UI, and tests | 4 hours |
+| Task 4 – Dockerisation implementation attempt and environment troubleshooting | 1 hours |
+| Final testing, debugging, and documentation | 2 hours |
+| **Total** | **18 hours** |
+
+All times are approximate estimates of the effort spent on implementation, testing, debugging, and documentation.
+
+Tasks 1–3 were implemented and tested locally. Task 4 was attempted but could not be completed or verified because of a local Docker storage issue. The incomplete Dockerisation changes were not included in the final submission.

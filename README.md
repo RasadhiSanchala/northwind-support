@@ -91,25 +91,12 @@ For manual verification: sign out, navigate directly to `/tickets/1` and confirm
 
 ## Known limitations / trade-offs
 
-- **Task 4 – Dockerisation attempted but not completed:** A multi-stage .NET 10 API Dockerfile, Docker Compose API service, database-aware health endpoint, and Docker verification scripts were prepared locally. However, the Docker build could not be completed because the Windows C: drive had no remaining free space (0 GB). Pulling the .NET 10 SDK image failed with a Docker containerd metadata input/output error (`meta.db: input/output error`). Windows DNS resolution and HTTPS access to the Microsoft Container Registry were successful, but the local Docker storage issue prevented further verification. Consequently, containerised API startup, the public `/health` endpoint, authenticated API access, non-root execution, Docker restore-layer caching, runtime image-size comparison, and React-to-container proxy integration could not be verified. Task 4 remains **incomplete and unverified**. The Dockerisation changes were not merged into the final submission, and the submitted `main` branch retains the existing SQL Server-only Docker Compose setup.
-
-- **Development-only credentials:** The seeded agent password and SQL Server credentials are intended exclusively for local development and assessment. They must not be reused in production. The application does not implement password reset or rotation, login rate limiting, account lockout, or multi-factor authentication.
-
-- **JWT authentication and session management:** JWT access tokens expire after 60 minutes and are stored in browser `localStorage` for simplicity. Logout removes the locally stored token, but already-issued tokens cannot be explicitly revoked before expiration unless the agent is deactivated or the signing key is changed. Because `localStorage` is accessible to JavaScript, this approach introduces an XSS-related token exposure risk. A production implementation should use secure, HttpOnly, SameSite cookies or a backend-for-frontend (BFF) authentication approach, along with appropriate session management and token revocation strategies.
-
-- **Authentication features outside the assessment scope:** User registration, password recovery, email verification, OAuth/SSO, refresh tokens, role-based authorization, and advanced account security controls were intentionally excluded to remain within the requirements and time constraints of Tasks 1–3.
-
-- **Concurrent ticket reference generation:** Ticket references are generated using the existing latest-ID-based mechanism. Although sufficient for a single-instance development environment, this approach is not guaranteed to be safe when multiple requests create tickets concurrently. A production system should use a database sequence, transaction-safe unique identifier strategy, or another concurrency-safe reference generator.
-
-- **Search and pagination scalability:** The current implementation uses SQL `LIKE '%term%'` searches and offset-based pagination. These approaches are appropriate for the supplied demonstration dataset but may become inefficient for very large ticket volumes. For production-scale workloads, improvements could include full-text search, carefully selected database indexes, query execution-plan analysis, and keyset pagination.
-
-- **Automatic assignment concurrency:** Agent assignment decisions use the current workload and capacity values available when a ticket is created or escalated. Under high concurrency, simultaneous requests could potentially select the same agent before either transaction commits. A production implementation should consider stronger transactional concurrency controls or an atomic capacity-reservation mechanism to enforce agent limits consistently.
-
-- **Development database initialization:** EF Core migrations and demo-data seeding are automatically performed during API startup in the Development environment. This simplifies local setup but is not the recommended production deployment strategy. Production database migrations should be executed through a controlled deployment process with appropriate backups, restricted database privileges, and rollback planning.
-
-- **Additional features not implemented:** Notifications, background processing, real-time updates, caching, an SLA summary reporting endpoint, comprehensive operational monitoring, and a visual redesign were not implemented. These capabilities were outside the required scope of Tasks 1–3 and were intentionally excluded to prioritize the core business rules, security, testing, and maintainability.
-
-- **Testing and deployment limitations:** Tasks 1–3 were implemented and tested locally using .NET unit tests, frontend tests, TypeScript checks, and build verification. However, the project has not undergone production load testing, independent penetration testing, or performance benchmarking against millions of tickets. The final submission should not be interpreted as a production-certified deployment.
+- **Task 4 is not finished:** no multi-stage API Dockerfile, containerized API, non-root image, `localhost:5080` endpoint or public `/health` endpoint. Docker Compose runs local SQL Server only.
+- Demo password and SQL Server local credentials are for **development only**. This exercise does not implement password reset/rotation, rate limiting, account lockout, MFA, roles or token revocation/refresh.
+- Logout removes the browser token, but an already issued JWT cannot be explicitly revoked before expiry except through deactivating the agent or changing the signing key. Tokens in localStorage are exposed to XSS; use HttpOnly secure same-site cookies or a backend-for-frontend for production.
+- A single-instance ticket reference generator based on the latest ID is not safe under concurrent writers; replace it with a database sequence/unique generation strategy in production.
+- Substring `LIKE '%term%'` queries and offset pagination are adequate for the sample dataset but would need indexing/search changes, keyset pagination and query-plan review for millions of tickets.
+- No registration, OAuth/SSO, notifications, CI, caching, report stretch goal, or visual redesign; those are outside the specified Tasks 1–3.
 
 ## AI-assisted workflow and delivery
 
