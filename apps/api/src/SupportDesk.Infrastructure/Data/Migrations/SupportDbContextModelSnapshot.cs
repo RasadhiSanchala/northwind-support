@@ -285,6 +285,21 @@ namespace SupportDesk.Infrastructure.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("SupportDesk.Infrastructure.Data.AgentCredential", b =>
+                {
+                    b.Property<int>("AgentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.HasKey("AgentId");
+
+                    b.ToTable("AgentCredentials", (string)null);
+                });
+
             modelBuilder.Entity("SupportDesk.Domain.Aggregates.Agents.AgentSpecialization", b =>
                 {
                     b.HasOne("SupportDesk.Domain.Aggregates.Agents.Agent", null)
@@ -325,6 +340,15 @@ namespace SupportDesk.Infrastructure.Data.Migrations
                     b.HasOne("SupportDesk.Domain.Aggregates.Tickets.Ticket", null)
                         .WithMany("Escalations")
                         .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SupportDesk.Infrastructure.Data.AgentCredential", b =>
+                {
+                    b.HasOne("SupportDesk.Domain.Aggregates.Agents.Agent", null)
+                        .WithOne()
+                        .HasForeignKey("SupportDesk.Infrastructure.Data.AgentCredential", "AgentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

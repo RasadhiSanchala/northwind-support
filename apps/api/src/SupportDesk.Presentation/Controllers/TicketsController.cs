@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using SupportDesk.Application.Contracts.Common;
 using SupportDesk.Application.Contracts.Tickets;
@@ -56,9 +58,14 @@ public sealed class TicketsController : ControllerBase
     [HttpPost("{id:int}/escalate")]
     public Task<EscalateTicketResponse> Escalate(
         int id,
-        EscalateTicketRequest request,
+        EscalateTicketBody request,
         [FromServices] EscalateTicketCommandHandler handler,
-        CancellationToken ct) => handler.HandleAsync(id, request, ct);
+        CancellationToken ct)
+    {
+        // Never accept the escalation actor from untrusted request JSON.
+        var actor = User.FindFirstValue(JwtRegisteredClaimNames.Email) ?? string.Empty;
+        return handler.HandleAsync(id, new EscalateTicketRequest(request.Reason, actor), ct);
+    }
 
     /// <summary>Immutable escalation history, newest first.</summary>
     [HttpGet("{id:int}/escalations")]
@@ -67,3 +74,6 @@ public sealed class TicketsController : ControllerBase
         [FromServices] GetTicketEscalationsQueryHandler handler,
         CancellationToken ct) => handler.HandleAsync(id, ct);
 }
+
+/// <summary>The actor is always determined from the authenticated JWT.</summary>
+public sealed record EscalateTicketBody(string Reason);

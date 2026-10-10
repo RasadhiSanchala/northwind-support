@@ -104,10 +104,9 @@ export interface CreateTicketPayload {
   requestedPriority?: TicketPriority;
 }
 
-/** In Task 2 the actor is explicitly supplied; Task 3 replaces it with JWT identity. */
+/** Actor is derived by the backend from the authenticated JWT. */
 export interface EscalateTicketPayload {
   reason: string;
-  escalatedBy: string;
 }
 
 export interface TicketEscalation {

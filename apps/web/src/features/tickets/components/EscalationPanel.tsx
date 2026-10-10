@@ -9,10 +9,9 @@ interface EscalationPanelProps {
   onEscalated: (response: EscalateTicketResponse) => void | Promise<void>;
 }
 
-/** Validates both reason and temporary actor before any HTTP request. */
+/** Validates the reason. The server records the authenticated JWT agent. */
 export function EscalationPanel({ ticket, onEscalated }: EscalationPanelProps) {
   const [reason, setReason] = useState('');
-  const [escalatedBy, setEscalatedBy] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [fieldError, setFieldError] = useState<string>();
@@ -28,15 +27,9 @@ export function EscalationPanel({ ticket, onEscalated }: EscalationPanelProps) {
     if (prohibited || isSaving) return;
 
     const normalizedReason = reason.trim();
-    const normalizedActor = escalatedBy.trim();
 
     if (normalizedReason.length < 5 || normalizedReason.length > 500) {
       setFieldError('Reason must contain 5 to 500 characters.');
-      return;
-    }
-
-    if (normalizedActor.length < 1 || normalizedActor.length > 100) {
-      setFieldError('Your name is required (maximum 100 characters).');
       return;
     }
 
@@ -44,7 +37,6 @@ export function EscalationPanel({ ticket, onEscalated }: EscalationPanelProps) {
     try {
       const response = await ticketsApi.escalateTicket(ticket.id, {
         reason: normalizedReason,
-        escalatedBy: normalizedActor,
       });
       // Only update the ticket when the mutation succeeds.
       await onEscalated(response);
@@ -68,21 +60,6 @@ export function EscalationPanel({ ticket, onEscalated }: EscalationPanelProps) {
         </p>
       ) : (
         <form onSubmit={(event) => void submit(event)} noValidate>
-          <div className="field">
-            <label className="field__label" htmlFor="escalation-actor">Escalated by</label>
-            <input
-              id="escalation-actor"
-              type="text"
-              value={escalatedBy}
-              maxLength={100}
-              onChange={(event) => setEscalatedBy(event.target.value)}
-              disabled={isSaving}
-              aria-describedby="escalation-actor-help"
-            />
-            <p className="field__hint" id="escalation-actor-help">
-              Temporary field until Task 3 adds authenticated agent identity.
-            </p>
-          </div>
           <div className="field">
             <label className="field__label" htmlFor="escalation-reason">Reason</label>
             <textarea
