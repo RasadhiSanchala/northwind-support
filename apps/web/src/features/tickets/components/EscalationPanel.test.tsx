@@ -33,10 +33,7 @@ const ticket: TicketDetail = {
   slaStatus: 'WithinSla',
 };
 
-const fillActorAndReason = (reason: string) => {
-  fireEvent.change(screen.getByLabelText('Escalated by'), {
-    target: { value: 'Development Agent' },
-  });
+const fillReason = (reason: string) => {
   fireEvent.change(screen.getByLabelText('Reason'), {
     target: { value: reason },
   });
@@ -48,7 +45,7 @@ describe('EscalationPanel', () => {
   it('prevents submission of a reason shorter than 5 characters', () => {
     const onEscalated = vi.fn();
     render(<EscalationPanel ticket={ticket} onEscalated={onEscalated} />);
-    fillActorAndReason('bad');
+    fillReason('bad');
     fireEvent.click(screen.getByRole('button', { name: 'Escalate ticket' }));
 
     expect(screen.getByRole('alert')).toHaveTextContent('5 to 500 characters');
@@ -56,22 +53,11 @@ describe('EscalationPanel', () => {
     expect(onEscalated).not.toHaveBeenCalled();
   });
 
-  it('does not send a request if actor is missing', () => {
-    render(<EscalationPanel ticket={ticket} onEscalated={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText('Reason'), {
-      target: { value: 'Urgent customer impact' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Escalate ticket' }));
-
-    expect(screen.getByRole('alert')).toHaveTextContent('Your name is required');
-    expect(escalateTicket).not.toHaveBeenCalled();
-  });
-
   it('shows an HTTP 409 without changing ticket state', async () => {
     const onEscalated = vi.fn();
     escalateTicket.mockRejectedValue(new ApiError(409, 'Ticket is already Critical.'));
     render(<EscalationPanel ticket={ticket} onEscalated={onEscalated} />);
-    fillActorAndReason('Customer needs faster handling');
+    fillReason('Customer needs faster handling');
     fireEvent.click(screen.getByRole('button', { name: 'Escalate ticket' }));
 
     await waitFor(() => {
@@ -101,13 +87,12 @@ describe('EscalationPanel', () => {
     };
     escalateTicket.mockResolvedValue(response);
     render(<EscalationPanel ticket={ticket} onEscalated={onEscalated} />);
-    fillActorAndReason('Urgent customer impact');
+    fillReason('Urgent customer impact');
     fireEvent.click(screen.getByRole('button', { name: 'Escalate ticket' }));
 
     await waitFor(() => expect(onEscalated).toHaveBeenCalledWith(response));
     expect(escalateTicket).toHaveBeenCalledWith(42, {
       reason: 'Urgent customer impact',
-      escalatedBy: 'Development Agent',
     });
   });
 
