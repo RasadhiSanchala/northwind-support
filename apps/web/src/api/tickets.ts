@@ -1,7 +1,10 @@
 import type {
   CreateTicketPayload,
+  EscalateTicketPayload,
+  EscalateTicketResponse,
   PagedResult,
   TicketDetail,
+  TicketEscalation,
   TicketFilters,
   TicketListItem,
   TicketStatus,
@@ -12,12 +15,8 @@ type QueryValue = string | number | boolean | undefined;
 
 function buildQuery(filters: TicketFilters): string {
   const params = new URLSearchParams();
-
   const append = (key: string, value: QueryValue) => {
-    if (value === undefined || value === '') {
-      return;
-    }
-
+    if (value === undefined || value === '') return;
     params.set(key, String(value));
   };
 
@@ -26,13 +25,13 @@ function buildQuery(filters: TicketFilters): string {
   append('search', filters.search.trim());
   append('status', filters.status);
   append('priority', filters.priority);
+  append('slaStatus', filters.slaStatus);
   append('categoryId', filters.categoryId);
   append('customerId', filters.customerId);
   append('assignedAgentId', filters.assignedAgentId);
   append('unassignedOnly', filters.unassignedOnly);
   append('sortBy', filters.sortBy);
   append('sortDirection', filters.sortDirection);
-
   return params.toString();
 }
 
@@ -59,4 +58,13 @@ export const ticketsApi = {
       method: 'PATCH',
       body: JSON.stringify({ agentId }),
     }),
+
+  escalateTicket: (id: number, payload: EscalateTicketPayload) =>
+    request<EscalateTicketResponse>(`/tickets/${id}/escalate`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getEscalations: (id: number) =>
+    request<TicketEscalation[]>(`/tickets/${id}/escalations`),
 };

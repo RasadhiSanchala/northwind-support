@@ -1,9 +1,20 @@
+
+using System.Text.Json.Serialization;
 using SupportDesk.Domain.Aggregates.Tickets;
 
 namespace SupportDesk.Application.Contracts.Tickets;
 
 /// <summary>
-/// A single ticket, with the description and contact details the detail screen shows.
+/// Explains automatic decisions made during ticket creation.
+/// </summary>
+public sealed record TicketTriageDto(
+    string PriorityReason,
+    string SlaReason,
+    string AssignmentReason);
+
+/// <summary>
+/// Details of a support ticket, including customer,
+/// category, SLA and assignment information.
 /// </summary>
 public sealed class TicketDetailDto
 {
@@ -33,6 +44,21 @@ public sealed class TicketDetailDto
 
     public DateTime? ResolvedAtUtc { get; set; }
 
-    /// <summary>Derived from the dates above; never stored.</summary>
+    /// <summary>
+    /// Calculated SLA status; never stored directly.
+    /// </summary>
     public SlaStatus SlaStatus { get; set; }
+
+    /// <summary>
+    /// Present in the creation response to explain
+    /// automatic priority, SLA and agent decisions.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TicketTriageDto? Triage { get; set; }
+
+    /// <summary>
+    /// Present when automatic assignment finds no agent.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? UnassignedReason { get; set; }
 }

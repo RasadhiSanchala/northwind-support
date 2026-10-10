@@ -1,18 +1,9 @@
-/**
- * Types for everything the API sends and receives. Keep these in step with the DTOs in
- * src/Application - they are the contract between the two halves of the application.
- */
-
+/** Shared, fully typed HTTP contracts for the support desk frontend. */
 export type CustomerTier = 'Standard' | 'Premium';
-
 export type TicketPriority = 'Low' | 'Medium' | 'High' | 'Critical';
-
 export type TicketStatus = 'New' | 'Open' | 'InProgress' | 'Resolved' | 'Closed';
-
 export type SlaStatus = 'NotApplicable' | 'WithinSla' | 'AtRisk' | 'Breached' | 'Met';
-
 export type TicketSortField = 'createdAtUtc' | 'updatedAtUtc' | 'dueAtUtc' | 'priority' | 'status';
-
 export type SortDirection = 'asc' | 'desc';
 
 export interface PagedResult<T> {
@@ -64,6 +55,12 @@ export interface TicketListItem {
   slaStatus: SlaStatus;
 }
 
+export interface TicketTriage {
+  priorityReason: string;
+  slaReason: string;
+  assignmentReason: string;
+}
+
 export interface TicketDetail {
   id: number;
   reference: string;
@@ -79,13 +76,16 @@ export interface TicketDetail {
   dueAtUtc: string | null;
   resolvedAtUtc: string | null;
   slaStatus: SlaStatus;
+  triage?: TicketTriage | null;
+  unassignedReason?: string | null;
 }
 
-/** Everything the ticket list screen can narrow the results by. */
+/** All filters are executed in SQL before count, sorting and pagination. */
 export interface TicketFilters {
   search: string;
   status?: TicketStatus;
   priority?: TicketPriority;
+  slaStatus?: SlaStatus;
   categoryId?: number;
   customerId?: number;
   assignedAgentId?: number;
@@ -102,6 +102,30 @@ export interface CreateTicketPayload {
   customerId: number;
   categoryId: number;
   requestedPriority?: TicketPriority;
+}
+
+/** Actor is derived by the backend from the authenticated JWT. */
+export interface EscalateTicketPayload {
+  reason: string;
+}
+
+export interface TicketEscalation {
+  id: number;
+  ticketId: number;
+  fromPriority: TicketPriority;
+  toPriority: TicketPriority;
+  fromAgentId: number | null;
+  toAgentId: number | null;
+  fromDueAtUtc: string | null;
+  toDueAtUtc: string | null;
+  reason: string;
+  escalatedBy: string;
+  escalatedAtUtc: string;
+}
+
+export interface EscalateTicketResponse {
+  ticket: TicketDetail;
+  escalation: TicketEscalation;
 }
 
 export interface Agent {
@@ -141,7 +165,6 @@ export interface CustomerDetail {
   tickets: TicketListItem[];
 }
 
-/** RFC 7807 problem document, which is how the API reports every failure. */
 export interface ProblemDetails {
   type?: string;
   title?: string;

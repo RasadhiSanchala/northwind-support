@@ -2,43 +2,24 @@ using SupportDesk.Domain.Aggregates.Tickets;
 
 namespace SupportDesk.Application.Contracts.Tickets;
 
-/// <summary>
-/// Filters, sorting and paging for the ticket list. Bound directly from the query string.
-/// </summary>
-/// <remarks>
-/// The web app already sends every filter below, but the API only sorts and pages so far: the
-/// filters are part of the contract and still have to be applied server-side.
-/// </remarks>
+/// <summary>SQL-filterable ticket list criteria. Filters combine with AND.</summary>
 public sealed record TicketQuery
 {
     public const int MaxPageSize = 100;
 
     public int Page { get; init; } = 1;
-
     public int PageSize { get; init; } = 20;
-
-    /// <summary>Matches the ticket title, its reference, or the customer name.</summary>
     public string? Search { get; init; }
-
     public TicketStatus? Status { get; init; }
-
     public TicketPriority? Priority { get; init; }
-
+    public SlaStatus? SlaStatus { get; init; }
     public int? CategoryId { get; init; }
-
     public int? CustomerId { get; init; }
-
     public int? AssignedAgentId { get; init; }
-
     public bool UnassignedOnly { get; init; }
-
-    /// <summary>createdAtUtc | updatedAtUtc | dueAtUtc | priority | status.</summary>
     public string SortBy { get; init; } = "createdAtUtc";
-
-    /// <summary>asc | desc.</summary>
     public string SortDirection { get; init; } = "desc";
 
-    /// <summary>Page and page size clamped to something a database can serve.</summary>
     public TicketQuery Normalized() => this with
     {
         Page = Page < 1 ? 1 : Page,

@@ -1,0 +1,19 @@
+.escalation-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.escalation-history__item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--colour-border);
+}
+
+.escalation-history__item:last-child {
+  border-bottom: none;
+}
+
+.escalation-history__item p {
+  margin: 5px 0;
+  overflow-wrap: anywhere;
+}
